@@ -1,12 +1,10 @@
-
 import { useState } from "react";
-import Sidebar from "./components/Sidebar";
-import Navbar from "./components/Navbar";
-import "./App.css";
+import Sidebar from "./components/layout/Sidebar";
+import Navbar from "./components/layout/Navbar";
 
 function App() {
   const [activePath, setActivePath] = useState(
-    window.location.pathname || "/dashboard"
+    window.location.pathname || "/dashboard",
   );
   const [mobileOpen, setMobileOpen] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
@@ -17,7 +15,9 @@ function App() {
   };
 
   return (
-    <div className={`app-layout ${darkMode ? "dark-theme" : ""}`}>
+    <div
+      className={`min-h-screen bg-page text-ink transition-colors ${darkMode ? "dark-theme" : ""}`}
+    >
       <Sidebar
         activePath={activePath}
         onNavigate={handleNavigate}
@@ -25,19 +25,15 @@ function App() {
         onClose={() => setMobileOpen(false)}
       />
 
-      <div className="main-layout">
+      <div className="min-h-screen md:ml-70">
         <Navbar
           onMenuClick={() => setMobileOpen(true)}
           darkMode={darkMode}
           onToggleTheme={() => setDarkMode((previous) => !previous)}
-          onLogout={() => {
-            // اربطي هنا منطق تسجيل الخروج الموجود في المشروع.
-          }}
+          onLogout={() => {}}
         />
 
-        <main className="page-content">
-          {/* محتوى الصفحة سيُضاف بواسطة نظام صفحات المشروع */}
-        </main>
+        <main className="min-h-[calc(100vh-90px)] p-4 sm:p-7" />
       </div>
     </div>
   );
