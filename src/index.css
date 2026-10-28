@@ -5,9 +5,13 @@
 @theme {
   --color-page: #f1f5f9;
   --color-surface: #ffffff;
-  --color-sidebar: #0b2342;
-  --color-sidebar-hover: #173957;
-  --color-sidebar-active: #164e63;
+  --color-sidebar: #ffffff;
+  --color-sidebar-hover: #eff6ff;
+  --color-sidebar-active: #e0f2fe;
+  --color-sidebar-text: #334155;
+  --color-sidebar-muted: #64748b;
+  --color-sidebar-accent: #0891b2;
+  --color-sidebar-line: #e2e8f0;
   --color-brand: #0d9488;
   --color-brand-hover: #0f766e;
   --color-accent: #06b6d4;
@@ -21,6 +25,13 @@
 .dark-theme {
   --color-page: #111827;
   --color-surface: #1e293b;
+  --color-sidebar: #0b2342;
+  --color-sidebar-hover: #173957;
+  --color-sidebar-active: #164e63;
+  --color-sidebar-text: #e2e8f0;
+  --color-sidebar-muted: #94a3b8;
+  --color-sidebar-accent: #67e8f9;
+  --color-sidebar-line: rgb(255 255 255 / 12%);
   --color-ink: #f1f5f9;
   --color-muted: #cbd5e1;
   --color-line: #334155;
