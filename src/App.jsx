@@ -1,6 +1,7 @@
 import { useState } from "react";
 import Sidebar from "./components/layout/Sidebar";
 import Navbar from "./components/layout/Navbar";
+import AddProductForm from "./features/products/components/AddProductForm";
 
 function App() {
   const [activePath, setActivePath] = useState(
@@ -33,7 +34,9 @@ function App() {
           onLogout={() => {}}
         />
 
-        <main className="min-h-[calc(100vh-90px)] p-4 sm:p-7" />
+        <main className="min-h-[calc(100vh-90px)] p-4 sm:p-7">
+          {activePath === "/products/add" && <AddProductForm />}
+        </main>
       </div>
     </div>
   );
