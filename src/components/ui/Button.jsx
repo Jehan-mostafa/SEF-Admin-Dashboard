@@ -4,9 +4,10 @@ const variants = {
   outline:
     "border border-line bg-surface text-ink hover:border-accent hover:bg-page",
   icon: "border border-line bg-surface text-ink hover:border-accent hover:bg-page hover:text-accent",
-  sidebar: "text-slate-200 hover:bg-sidebar-hover hover:text-white",
+  sidebar:
+    "text-sidebar-text hover:bg-sidebar-hover hover:text-sidebar-accent",
   sidebarActive:
-    "bg-sidebar-active text-cyan-300 shadow-lg shadow-black/15 hover:bg-sidebar-hover hover:text-cyan-200",
+    "bg-sidebar-active text-sidebar-accent shadow-lg shadow-black/15 hover:bg-sidebar-hover",
 };
 
 export default function Button({
