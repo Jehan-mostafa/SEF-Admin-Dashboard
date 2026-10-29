@@ -1,4 +1,5 @@
 import { useState } from "react";
+import DashboardPage from "./features/dashboard/pages/DashboardPage";
 import Sidebar from "./components/layout/Sidebar";
 import Navbar from "./components/layout/Navbar";
 
@@ -33,7 +34,9 @@ function App() {
           onLogout={() => {}}
         />
 
-        <main className="min-h-[calc(100vh-90px)] p-4 sm:p-7" />
+        <main className="min-h-[calc(100vh-90px)] p-4 sm:p-7">
+          {activePath === "/dashboard" && <DashboardPage />}
+        </main>
       </div>
     </div>
   );
