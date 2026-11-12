@@ -1,5 +1,9 @@
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { toast } from "react-toastify";
 import { createProduct } from "../services/productService";
+import Button from "../../../components/ui/Button";
+import Input from "../../../components/ui/Input";
+import Label from "../../../components/ui/Label";
 
 const initialFormData = {
   name: "",
@@ -8,9 +12,12 @@ const initialFormData = {
   price: "",
   discountPrice: "",
   stock: "",
-  category: "",
-  brand: "",
   sku: "",
+  category: "",
+  subcategory: "",
+  brand: "",
+  featured: false,
+  isActive: true,
 };
 
 function getErrorMessage(error) {
@@ -26,72 +33,154 @@ function getErrorMessage(error) {
       .join(" ");
   }
 
-  if (data?.errors && typeof data.errors === "object") {
-    return Object.values(data.errors)
-      .flat()
-      .map((item) =>
-        typeof item === "string" ? item : item?.message || ""
-      )
-      .filter(Boolean)
-      .join(" ");
-  }
-
   if (!error.response) {
     return "Unable to connect to the server. Please try again.";
+  }
+
+  if (error.response.status === 401 || error.response.status === 403) {
+    return "Admin authentication is required to create a product.";
   }
 
   return "Something went wrong. Please try again.";
 }
 
+const fields = [
+  {
+    name: "name",
+    label: "Product Name",
+    placeholder: "Wireless Headphones",
+    required: true,
+  },
+  {
+    name: "shortDescription",
+    label: "Short Description",
+    placeholder: "High-quality wireless headphones",
+    required: true,
+  },
+  {
+    name: "price",
+    label: "Price ($)",
+    type: "number",
+    placeholder: "299.99",
+    required: true,
+    min: "0.01",
+    step: "0.01",
+  },
+  {
+    name: "discountPrice",
+    label: "Discount Price ($)",
+    type: "number",
+    placeholder: "249.99",
+    min: "0",
+    step: "0.01",
+  },
+  {
+    name: "stock",
+    label: "Stock Quantity",
+    type: "number",
+    placeholder: "50",
+    required: true,
+    min: "0",
+    step: "1",
+  },
+  {
+    name: "category",
+    label: "Category",
+    placeholder: "Electronics",
+    required: true,
+  },
+  {
+    name: "subcategory",
+    label: "Subcategory",
+    placeholder: "Headphones",
+  },
+  {
+    name: "brand",
+    label: "Brand",
+    placeholder: "Sony",
+  },
+  {
+    name: "sku",
+    label: "SKU",
+    placeholder: "WH-001",
+  },
+];
+
 export default function AddProductForm() {
   const [formData, setFormData] = useState(initialFormData);
   const [images, setImages] = useState([]);
   const [imagePreviews, setImagePreviews] = useState([]);
-  const [error, setError] = useState("");
+  const [tags, setTags] = useState([]);
+  const [tagInput, setTagInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [successMessage, setSuccessMessage] = useState("");
 
   const imageUrls = useRef(new Set());
   const fileInputRef = useRef(null);
 
   useEffect(() => {
+    const urls = imageUrls.current;
     return () => {
-      imageUrls.current.forEach((url) => URL.revokeObjectURL(url));
-      imageUrls.current.clear();
+      urls.forEach((url) => URL.revokeObjectURL(url));
+      urls.clear();
     };
   }, []);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((previous) => ({ ...previous, [name]: value }));
-    setError("");
-    setSuccessMessage("");
+  const handleChange = (event) => {
+    const { name, value, type, checked } = event.target;
+
+    setFormData((previous) => ({
+      ...previous,
+      [name]: type === "checkbox" ? checked : value,
+    }));
   };
 
-  const handleImagesChange = (e) => {
-    const files = Array.from(e.target.files || []);
-    e.target.value = "";
+  const addTag = () => {
+    const value = tagInput.trim().replace(/,$/, "");
+
+    if (!value) return;
+
+    if (tags.some((tag) => tag.toLowerCase() === value.toLowerCase())) {
+      toast.info("This tag already exists.");
+      return;
+    }
+
+    setTags((previous) => [...previous, value]);
+    setTagInput("");
+  };
+
+  const handleTagKeyDown = (event) => {
+    if (event.key === "Enter" || event.key === ",") {
+      event.preventDefault();
+      addTag();
+    }
+  };
+
+  const removeTag = (index) => {
+    setTags((previous) => previous.filter((_, i) => i !== index));
+  };
+
+  const handleImagesChange = (event) => {
+    const files = Array.from(event.target.files || []);
+    event.target.value = "";
 
     if (images.length + files.length > 5) {
-      setError("You can upload a maximum of 5 images.");
+      toast.error("You can upload a maximum of 5 images.");
       return;
     }
 
     if (files.some((file) => !file.type.startsWith("image/"))) {
-      setError("Please select valid image files.");
+      toast.error("Please select valid image files.");
       return;
     }
 
-    const newPreviews = files.map((file) => {
+    const previews = files.map((file) => {
       const url = URL.createObjectURL(file);
       imageUrls.current.add(url);
       return url;
     });
 
     setImages((previous) => [...previous, ...files]);
-    setImagePreviews((previous) => [...previous, ...newPreviews]);
-    setError("");
-    setSuccessMessage("");
+    setImagePreviews((previous) => [...previous, ...previews]);
   };
 
   const removeImage = (index) => {
@@ -104,7 +193,6 @@ export default function AddProductForm() {
 
     setImages((previous) => previous.filter((_, i) => i !== index));
     setImagePreviews((previous) => previous.filter((_, i) => i !== index));
-    setError("");
   };
 
   const resetForm = () => {
@@ -117,22 +205,40 @@ export default function AddProductForm() {
 
     setImages([]);
     setImagePreviews([]);
+    setTags([]);
+    setTagInput("");
 
-    if (fileInputRef.current) fileInputRef.current.value = "";
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError("");
-    setSuccessMessage("");
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+
+    if (loading) return;
+
+    const requiredFields = [
+      ["name", "Product name is required."],
+      ["shortDescription", "Short description is required."],
+      ["description", "Detailed description is required."],
+      ["category", "Category is required."],
+    ];
+
+    for (const [field, message] of requiredFields) {
+      if (!formData[field].trim()) {
+        toast.error(message);
+        return;
+      }
+    }
 
     if (images.length === 0) {
-      setError("Please upload at least one product image.");
+      toast.error("Please upload at least one product image.");
       return;
     }
 
     if (!Number.isFinite(Number(formData.price)) || Number(formData.price) <= 0) {
-      setError("Please enter a valid product price.");
+      toast.error("Please enter a valid product price.");
       return;
     }
 
@@ -141,143 +247,203 @@ export default function AddProductForm() {
       (!Number.isFinite(Number(formData.discountPrice)) ||
         Number(formData.discountPrice) < 0)
     ) {
-      setError("Please enter a valid discounted price.");
+      toast.error("Please enter a valid discounted price.");
       return;
     }
 
     if (!Number.isInteger(Number(formData.stock)) || Number(formData.stock) < 0) {
-      setError("Stock must be a non-negative whole number.");
+      toast.error("Stock must be a non-negative whole number.");
       return;
     }
 
     const data = new FormData();
 
     Object.entries(formData).forEach(([key, value]) => {
-      if (value !== "") data.append(key, value);
+      if (value !== "" && value !== null && value !== undefined) {
+        data.append(key, String(value));
+      }
     });
 
-    images.forEach((image) => data.append("images", image));
+    data.append("tags", JSON.stringify(tags));
+
+    images.forEach((image) => {
+      data.append("images", image);
+    });
 
     setLoading(true);
 
     try {
       await createProduct(data);
       resetForm();
-      setSuccessMessage("Product created successfully.");
-    } catch (err) {
-      setError(getErrorMessage(err));
+      toast.success("Product created successfully.");
+    } catch (error) {
+      console.error("Create Product Error:", error);
+
+      const status = error.response?.status;
+      const responseData = error.response?.data;
+
+      const message =
+        responseData?.message ||
+        responseData?.error ||
+        (typeof responseData === "string" ? responseData : "") ||
+        error.message ||
+        getErrorMessage(error);
+
+      toast.error(
+        status
+          ? `Error ${status}: ${message}`
+          : `Connection error: ${message}`
+      );
     } finally {
       setLoading(false);
     }
   };
 
-  const inputClass =
-    "w-full rounded-lg border border-slate-300 dark:border-slate-700 " +
-    "bg-white dark:bg-slate-800 text-slate-900 dark:text-white " +
-    "px-3.5 py-2.5 text-sm outline-none transition " +
-    "focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20";
-
-  const labelClass =
-    "mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300";
+  const inputClass = "mb-4";
 
   return (
-    <div className="mx-auto max-w-2xl rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-8">
+    <div className="mx-auto max-w-3xl rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-8">
       <h2 className="mb-6 text-xl font-bold text-slate-800 dark:text-white">
         Add New Product
       </h2>
 
-      {error && (
-        <div role="alert" className="mb-4 rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">
-          {error}
-        </div>
-      )}
-
-      {successMessage && (
-        <div role="status" className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700">
-          {successMessage}
-        </div>
-      )}
-
-      <form onSubmit={handleSubmit} className="space-y-5">
-        <div>
-          <label className={labelClass} htmlFor="name">Product Name *</label>
-          <input id="name" name="name" value={formData.name} onChange={handleChange}
-            className={inputClass} placeholder="Wireless Headphones" required />
-        </div>
-
-        <div>
-          <label className={labelClass} htmlFor="shortDescription">Short Description *</label>
-          <input id="shortDescription" name="shortDescription" value={formData.shortDescription}
-            onChange={handleChange} className={inputClass}
-            placeholder="High-quality wireless headphones" required />
-        </div>
-
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <div>
-            <label className={labelClass} htmlFor="price">Price ($) *</label>
-            <input id="price" name="price" type="number" min="0.01" step="0.01"
-              value={formData.price} onChange={handleChange} className={inputClass}
-              placeholder="299.99" required />
-          </div>
-
-          <div>
-            <label className={labelClass} htmlFor="discountPrice">Discount Price ($)</label>
-            <input id="discountPrice" name="discountPrice" type="number" min="0" step="0.01"
-              value={formData.discountPrice} onChange={handleChange} className={inputClass}
-              placeholder="249.99" />
-          </div>
-
-          <div>
-            <label className={labelClass} htmlFor="stock">Stock Quantity *</label>
-            <input id="stock" name="stock" type="number" min="0" step="1"
-              value={formData.stock} onChange={handleChange} className={inputClass}
-              placeholder="50" required />
-          </div>
-        </div>
-
+      <form onSubmit={handleSubmit} noValidate className="space-y-5">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div>
-            <label className={labelClass} htmlFor="category">Category *</label>
-            <input id="category" name="category" value={formData.category}
-              onChange={handleChange} className={inputClass}
-              placeholder="Electronics" required />
-          </div>
-
-          <div>
-            <label className={labelClass} htmlFor="brand">Brand</label>
-            <input id="brand" name="brand" value={formData.brand}
-              onChange={handleChange} className={inputClass} placeholder="Brand name" />
-          </div>
-
-          <div className="sm:col-span-2">
-            <label className={labelClass} htmlFor="sku">SKU (Stock Keeping Unit)</label>
-            <input id="sku" name="sku" value={formData.sku}
-              onChange={handleChange} className={inputClass} placeholder="WH-001" />
-          </div>
+          {fields.map((field) => (
+            <div key={field.name} className={inputClass}>
+              <Label htmlFor={field.name} required={field.required}>
+                {field.label}
+              </Label>
+              <Input
+                id={field.name}
+                name={field.name}
+                type={field.type || "text"}
+                value={formData[field.name]}
+                onChange={handleChange}
+                placeholder={field.placeholder}
+                required={field.required}
+                min={field.min}
+                step={field.step}
+              />
+            </div>
+          ))}
         </div>
 
         <div>
-          <label className={labelClass} htmlFor="description">Detailed Description *</label>
-          <textarea id="description" name="description" rows={4}
-            value={formData.description} onChange={handleChange} className={inputClass}
-            placeholder="Enter the full product description..." required />
+          <Label htmlFor="description" required>
+            Detailed Description
+          </Label>
+          <textarea
+            id="description"
+            name="description"
+            rows={4}
+            value={formData.description}
+            onChange={handleChange}
+            placeholder="Enter the full product description..."
+            required
+            className="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+          />
         </div>
 
         <div>
-          <label className={labelClass} htmlFor="images">Product Images * (Maximum 5)</label>
-          <input ref={fileInputRef} id="images" type="file" multiple accept="image/*"
+          <Label htmlFor="tags">Tags</Label>
+          <div className="flex w-full items-center gap-2">
+            <Input
+              id="tags"
+              value={tagInput}
+              onChange={(event) => setTagInput(event.target.value)}
+              onKeyDown={handleTagKeyDown}
+              placeholder="Type a tag and press Enter"
+              className="min-w-0 flex-1"
+            />
+            <Button
+              type="button"
+              onClick={addTag}
+              className="w-20 shrink-0 rounded-lg px-3 py-2.5 text-sm font-semibold"
+            >
+              Add
+            </Button>
+          </div>
+
+          <div className="mt-3 flex flex-wrap gap-2">
+            {tags.map((tag, index) => (
+              <span
+                key={`${tag}-${index}`}
+                className="inline-flex items-center gap-2 rounded-full bg-teal-50 px-3 py-1.5 text-sm text-teal-700 dark:bg-teal-900/30 dark:text-teal-300"
+              >
+                {tag}
+                <button
+                  type="button"
+                  onClick={() => removeTag(index)}
+                  aria-label={`Remove ${tag}`}
+                  className="font-bold hover:text-rose-600"
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex flex-wrap gap-6">
+          <label className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+            <input
+              type="checkbox"
+              name="featured"
+              checked={formData.featured}
+              onChange={handleChange}
+              className="accent-teal-600"
+            />
+            Featured Product
+          </label>
+
+          <label className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+            <input
+              type="checkbox"
+              name="isActive"
+              checked={formData.isActive}
+              onChange={handleChange}
+              className="accent-teal-600"
+            />
+            Active Product
+          </label>
+        </div>
+
+        <div>
+          <Label htmlFor="images" required>
+            Product Images (Maximum 5)
+          </Label>
+          <input
+            ref={fileInputRef}
+            id="images"
+            type="file"
+            multiple
+            accept="image/*"
             onChange={handleImagesChange}
-            className="block w-full cursor-pointer text-sm text-slate-500 file:mr-4 file:rounded-lg file:border-0 file:bg-teal-50 file:px-4 file:py-2 file:font-semibold file:text-teal-700 hover:file:bg-teal-100" />
+            className="block w-full cursor-pointer text-sm text-slate-500 file:mr-4 file:rounded-lg file:border-0 file:bg-teal-50 file:px-4 file:py-2 file:font-semibold file:text-teal-700 hover:file:bg-teal-100"
+          />
 
-          <p className="mt-2 text-xs text-slate-500">{images.length} of 5 images selected</p>
+          <p className="mt-2 text-xs text-slate-500">
+            {images.length} of 5 images selected
+          </p>
 
           <div className="mt-3 flex flex-wrap gap-3">
             {imagePreviews.map((src, index) => (
-              <div key={src} className="relative h-20 w-20 overflow-hidden rounded-lg border border-slate-200 dark:border-slate-700">
-                <img src={src} alt={`Product preview ${index + 1}`} className="h-full w-full object-cover" />
-                <button type="button" onClick={() => removeImage(index)}
+              <div
+                key={src}
+                className="relative h-20 w-20 overflow-hidden rounded-lg border border-slate-200 dark:border-slate-700"
+              >
+                <img
+                  src={src}
+                  alt={`Product preview ${index + 1}`}
+                  className="h-full w-full object-cover"
+                />
+                <button
+                  type="button"
+                  onClick={() => removeImage(index)}
                   aria-label={`Remove image ${index + 1}`}
-                  className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-rose-600 text-white hover:bg-rose-700">
+                  className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-rose-600 text-white hover:bg-rose-700"
+                >
                   ×
                 </button>
               </div>
@@ -285,10 +451,13 @@ export default function AddProductForm() {
           </div>
         </div>
 
-        <button type="submit" disabled={loading}
-          className="w-full rounded-lg bg-teal-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-teal-700 active:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-50">
+        <Button
+          type="submit"
+          disabled={loading}
+          className="w-full rounded-lg px-4 py-3 text-sm font-semibold shadow-sm"
+        >
           {loading ? "Creating Product..." : "Create Product"}
-        </button>
+        </Button>
       </form>
     </div>
   );
