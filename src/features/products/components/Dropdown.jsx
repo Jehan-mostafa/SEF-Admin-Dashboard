@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { ChevronDown, Check } from "lucide-react";
+import Button from "../../../components/ui/Button";
 
 function Dropdown({ id, label, value, options, onChange }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -47,14 +48,14 @@ function Dropdown({ id, label, value, options, onChange }) {
         {label}
       </label>
 
-      <button
+      <Button
         id={id}
-        type="button"
+        variant="outline"
         aria-labelledby={`${id}-label`}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
         onClick={() => setIsOpen((previous) => !previous)}
-        className="flex w-full items-center justify-between gap-3 rounded-xl border border-line bg-surface px-4 py-3 text-left text-sm text-ink transition-colors hover:border-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        className="w-full justify-between gap-3 rounded-xl px-4 py-3 text-left text-sm"
       >
         <span className="truncate">{selectedOption.label}</span>
 
@@ -64,7 +65,7 @@ function Dropdown({ id, label, value, options, onChange }) {
             isOpen ? "rotate-180" : ""
           }`}
         />
-      </button>
+      </Button>
 
       {isOpen && (
         <div
@@ -73,13 +74,13 @@ function Dropdown({ id, label, value, options, onChange }) {
           className="absolute left-0 right-0 top-full z-30 mt-2 max-h-60 overflow-y-auto rounded-xl border border-line bg-surface p-1 shadow-xl"
         >
           {options.map((option) => (
-            <button
+            <Button
               key={option.value}
-              type="button"
+              variant="outline"
               role="option"
               aria-selected={value === option.value}
               onClick={() => handleSelect(option.value)}
-              className={`flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-left text-sm transition-colors ${
+              className={`w-full justify-between gap-3 rounded-lg border-0 px-3 py-2.5 text-left text-sm ${
                 value === option.value
                   ? "bg-brand/10 font-semibold text-brand"
                   : "text-ink hover:bg-page"
@@ -90,7 +91,7 @@ function Dropdown({ id, label, value, options, onChange }) {
               {value === option.value && (
                 <Check size={16} className="shrink-0" />
               )}
-            </button>
+            </Button>
           ))}
         </div>
       )}

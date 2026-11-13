@@ -1,23 +1,7 @@
 import { Search, SlidersHorizontal, X } from "lucide-react";
 import Button from "../../../components/ui/Button";
 import Dropdown from "./Dropdown";
-
-const categories = [
-  { value: "", label: "All Categories" },
-  { value: "electronics", label: "Electronics" },
-  { value: "beauty", label: "Beauty" },
-  { value: "sports", label: "Sports" },
-  { value: "home", label: "Home" },
-  { value: "fashion", label: "Fashion" },
-  { value: "phones", label: "Phones" },
-];
-
-const sortOptions = [
-  { value: "", label: "Default" },
-  { value: "price_asc", label: "Price: Low to High" },
-  { value: "price_desc", label: "Price: High to Low" },
-  { value: "rating", label: "Rating" },
-];
+import { categories, sortOptions } from "../constants/filterOptions";
 
 function ProductsFilters({
   search,
